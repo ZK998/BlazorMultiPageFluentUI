@@ -1,7 +1,7 @@
 ﻿@using Microsoft.Extensions.Logging
 @using System.Text
 @using Microsoft.JSInterop
-@using BlazorMultiPageLib 
+@using BlazorMultiPageLib
 @inject IJSRuntime JS
 
 <!-- Display the tab headers -->
@@ -58,7 +58,7 @@
     private List<Tab> Tabs = new();
     private static MultiPageTabSet StaticTabSet { get; set; } = new();
     private int OffsetLeft { get; set; }
-    private IJSObjectReference? jsModel ;
+    private IJSObjectReference? jsModel;
     private void ClearActive()
     {
         foreach (var item in Tabs.Where(item => item.IsActive))
@@ -70,9 +70,9 @@
     }
     private async Task MoveLeft()
     {
-        if(jsModel == null)
+        if (jsModel == null)
             jsModel = await JS.InvokeAsync<IJSObjectReference>("import", "./_content/BlazorMultiPageLib/TabSet.js");
-                
+
         var tabsWidth = await jsModel.InvokeAsync<int>("GetWidth", ".middletab");
         MoveTo(OffsetLeft - tabsWidth);
     }
@@ -107,7 +107,7 @@
 
         if (tab.IsActive)
         {
-            var activeTab = null as Tab; 
+            var activeTab = null as Tab;
             if (index > 0)
             {
                 activeTab = Tabs[index - 1];
@@ -138,7 +138,7 @@
         {
             jsModel = await JS.InvokeAsync<IJSObjectReference>("import", "./_content/BlazorMultiPageLib/TabSet.js");
         };
- 
+
         var tabsWidth = await jsModel.InvokeAsync<int>("GetWidth", ".middletab");
         var index = Tabs.IndexOf(tab);
         var sumWidth = Tabs.Take(index).Sum(m => m.TabWidth);
@@ -154,6 +154,7 @@
         }
         ClearActive();
         await Task.Delay(100);  // Wait for the tab to scroll
+        tab.TabWidth = tabWidth;
         tab.IsActive = true;
     }
 
@@ -162,13 +163,13 @@
 
         if (firstRender)
         {
-            jsModel = await JS.InvokeAsync<IJSObjectReference>("import", "./_content/BlazorMultiPageLib/TabSet.js"); 
+            jsModel = await JS.InvokeAsync<IJSObjectReference>("import", "./_content/BlazorMultiPageLib/TabSet.js");
 
             for (var i = 0; i < Tabs.Count; i++)
             {
                 var item = Tabs[i];
                 if (item.TabWidth > 0) continue;
-                item.TabWidth = await jsModel.InvokeAsync<int>("GetTabWidth", i); 
+                item.TabWidth = await jsModel.InvokeAsync<int>("GetTabWidth", i);
             }
         }
 
@@ -176,7 +177,7 @@
         // TabsWidth = await JS.InvokeAsync<int>("GetWidth", ".middletab");
     }
     protected override async Task OnInitializedAsync()
-    { 
+    {
         StaticTabSet = this;
         await Task.CompletedTask;
     }
@@ -187,9 +188,9 @@
         var offset = Tabs.Take(top).Sum(m => m.TabWidth);
         var other = Tabs.Skip(top).Sum(m => m.TabWidth == 0 ? GetLength(m.Title) * 8 + 20 : m.TabWidth);
 
-        if (jsModel == null) 
+        if (jsModel == null)
             jsModel = await JS.InvokeAsync<IJSObjectReference>("import", "./_content/BlazorMultiPageLib/TabSet.js");
-       
+
         var tabsWidth = await jsModel.InvokeAsync<int>("GetWidth", ".middletab");
         if (offset + other < tabsWidth - 100)
         {
@@ -198,10 +199,10 @@
         }
         if (other < tabsWidth - 100)
         {
-            MoveTo(offset + other - tabsWidth + 100); 
+            MoveTo(offset + other - tabsWidth + 100);
             return;
         }
-        OffsetLeft = offset;  
+        OffsetLeft = offset;
     }
 
     private static int GetLength(string str)
@@ -245,7 +246,7 @@
             }
             temp += item.TabWidth;
         }
-        OffsetLeft = isSet ? temp : x; 
+        OffsetLeft = isSet ? temp : x;
     }
     public async Task RunAddTab(string title, string url)
     {
@@ -286,5 +287,5 @@
         }
         StateHasChanged();
     }
- 
+
 }
