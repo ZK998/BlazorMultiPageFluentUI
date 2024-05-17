@@ -1,0 +1,34 @@
+﻿@using Microsoft.JSInterop
+@inherits LayoutComponentBase
+
+<div class="page">
+    @Body
+</div>
+
+
+<FluentToastProvider Position="ToastPosition.TopCenter" />
+<FluentDialogProvider />
+<FluentTooltipProvider />
+<FluentMessageBarProvider />
+
+@inject IJSRuntime JsRuntime
+@inject ILocalStorageService LocalStorage
+@code {
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            //这里判断是否登录
+            var token = await LocalStorage.GetItemAsync<string>("token");
+
+            //if (token == null)
+           // {
+           //     var model = await JsRuntime.InvokeAsync<IJSObjectReference>("import", "./_content/BlazorMultiPageLib/TabSet.js");
+           //     await model.InvokeVoidAsync("GoLogin");
+           // }
+
+
+        }
+    }
+}

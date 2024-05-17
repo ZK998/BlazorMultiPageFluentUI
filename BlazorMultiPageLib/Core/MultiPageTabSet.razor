@@ -1,0 +1,290 @@
+﻿@using Microsoft.Extensions.Logging
+@using System.Text
+@using Microsoft.JSInterop
+@using BlazorMultiPageLib 
+@inject IJSRuntime JS
+
+<!-- Display the tab headers -->
+
+<ul class="nav-my-tab">
+    <li class="leftbackward">
+        <a href="javascript:void(0)" @onclick="@MoveLeft">
+            <i class="bi bi-chevron-double-left"></i>
+        </a>
+    </li>
+    <li class="rightforward">
+        <a href="javascript:void(0)" @onclick="@CloseOther" title="关闭其他" style="border-right:1px #ddd solid">
+            <i class="bi bi-x-circle"></i>
+        </a>
+        <a href="javascript:void(0)" @onclick="@MoveRight">
+            <i class="bi bi-chevron-double-right"></i>
+        </a>
+    </li>
+    <li class="middletab">
+        <div class="middletab-tabs" style="left:@(0-OffsetLeft)px">
+            <ul class="nav nav-tabs">
+                @foreach (var item in Tabs)
+                {
+                    var tempItem = item;
+                    <li @key="item" class="nav-item @(item.IsActive?"active":"")">
+                        <a @onclick="@(async e =>await ActivateTab(tempItem))" class="nav-link" role="button">
+                            @item.Title
+                            @if (item.Title != "首页")
+                            {
+                                <i class="bi bi-x" @onclick="@(async e =>await CloseTab(tempItem))"></i>
+                            }
+                            else
+                            {
+                                <i style="display:inline-block;width:12px"></i>
+                            }
+
+                        </a>
+                    </li>
+                }
+            </ul>
+        </div>
+    </li>
+</ul>
+
+<div class="nav-tabs-body p-4" style="height: calc(100% - 50px);">
+
+    @foreach (var item in Tabs)
+    {
+        <iframe @key="item" src="@item.Url" style="@item.Style"></iframe>
+    }
+</div>
+
+@code {
+    private List<Tab> Tabs = new();
+    private static MultiPageTabSet StaticTabSet { get; set; } = new();
+    private int OffsetLeft { get; set; }
+    private IJSObjectReference? jsModel ;
+    private void ClearActive()
+    {
+        foreach (var item in Tabs.Where(item => item.IsActive))
+        {
+            item.IsActive = false;
+        }
+
+        StateHasChanged();
+    }
+    private async Task MoveLeft()
+    {
+        if(jsModel == null)
+            jsModel = await JS.InvokeAsync<IJSObjectReference>("import", "./_content/BlazorMultiPageLib/TabSet.js");
+                
+        var tabsWidth = await jsModel.InvokeAsync<int>("GetWidth", ".middletab");
+        MoveTo(OffsetLeft - tabsWidth);
+    }
+    private async Task MoveRight()
+    {
+        if (jsModel == null)
+            jsModel = await JS.InvokeAsync<IJSObjectReference>("import", "./_content/BlazorMultiPageLib/TabSet.js");
+        var tabsWidth = await jsModel.InvokeAsync<int>("GetWidth", ".middletab");
+
+        var moveS = OffsetLeft + tabsWidth;
+        var temp = 0;
+        var soTab = null as Tab;
+        foreach (var tab in Tabs)
+        {
+            temp += tab.TabWidth;
+            if (temp <= moveS) continue;
+            soTab = tab;
+            break;
+        }
+        soTab ??= Tabs.LastOrDefault();
+        if (soTab != null)
+        {
+            await ScrollToTab(soTab);
+        }
+
+    }
+    private async Task CloseTab(Tab tab)
+    {
+        var index = Tabs.IndexOf(tab);
+        Tabs.Remove(tab);
+        // LoggerProvider.CreateLogger("dd").LogWarning("CloseTab");
+
+        if (tab.IsActive)
+        {
+            var activeTab = null as Tab; 
+            if (index > 0)
+            {
+                activeTab = Tabs[index - 1];
+            }
+            else if (Tabs.Count > 0)
+            {
+                activeTab = Tabs[0];
+            }
+            if (activeTab != null)
+            {
+                await ActivateTab(activeTab);
+            }
+        }
+    }
+    private async Task CloseOther()
+    {
+        // Tabs.RemoveAll(m => !m.IsActive);
+        Tabs.RemoveAll(m => m.Url != "/welcome");
+        if (Tabs.Count > 0)
+        {
+            await ScrollToTab(Tabs.FirstOrDefault()!);
+            Tabs[0].IsActive = true;
+        }
+    }
+    private async Task ActivateTab(Tab tab)
+    {
+        if (jsModel == null)
+        {
+            jsModel = await JS.InvokeAsync<IJSObjectReference>("import", "./_content/BlazorMultiPageLib/TabSet.js");
+        };
+ 
+        var tabsWidth = await jsModel.InvokeAsync<int>("GetWidth", ".middletab");
+        var index = Tabs.IndexOf(tab);
+        var sumWidth = Tabs.Take(index).Sum(m => m.TabWidth);
+        var tabWidth = tab.TabWidth == 0 ? GetLength(tab.Title) * 8 + 20 : tab.TabWidth;
+        if (sumWidth <= OffsetLeft || sumWidth + tabWidth >= OffsetLeft + tabsWidth)
+        {
+            var pre = index - 1;
+            if (pre < 0)
+            {
+                pre = 0;
+            }
+            await ScrollToTab(Tabs[pre]);
+        }
+        ClearActive();
+        await Task.Delay(100);  // Wait for the tab to scroll
+        tab.IsActive = true;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+
+        if (firstRender)
+        {
+            jsModel = await JS.InvokeAsync<IJSObjectReference>("import", "./_content/BlazorMultiPageLib/TabSet.js"); 
+
+            for (var i = 0; i < Tabs.Count; i++)
+            {
+                var item = Tabs[i];
+                if (item.TabWidth > 0) continue;
+                item.TabWidth = await jsModel.InvokeAsync<int>("GetTabWidth", i); 
+            }
+        }
+
+
+        // TabsWidth = await JS.InvokeAsync<int>("GetWidth", ".middletab");
+    }
+    protected override async Task OnInitializedAsync()
+    { 
+        StaticTabSet = this;
+        await Task.CompletedTask;
+    }
+
+    private async Task ScrollToTab(Tab tab)
+    {
+        var top = Tabs.IndexOf(tab);
+        var offset = Tabs.Take(top).Sum(m => m.TabWidth);
+        var other = Tabs.Skip(top).Sum(m => m.TabWidth == 0 ? GetLength(m.Title) * 8 + 20 : m.TabWidth);
+
+        if (jsModel == null) 
+            jsModel = await JS.InvokeAsync<IJSObjectReference>("import", "./_content/BlazorMultiPageLib/TabSet.js");
+       
+        var tabsWidth = await jsModel.InvokeAsync<int>("GetWidth", ".middletab");
+        if (offset + other < tabsWidth - 100)
+        {
+            OffsetLeft = 0;
+            return;
+        }
+        if (other < tabsWidth - 100)
+        {
+            MoveTo(offset + other - tabsWidth + 100); 
+            return;
+        }
+        OffsetLeft = offset;  
+    }
+
+    private static int GetLength(string str)
+    {
+
+        if (str.Length == 0) return 0;
+
+        var ascii = new ASCIIEncoding();
+        var tempLen = 0;
+        var s = ascii.GetBytes(str);
+        foreach (var t in s)
+        {
+            if ((int)t == 63)
+            {
+                tempLen += 2;
+            }
+            else
+            {
+                tempLen += 1;
+            }
+        }
+
+        return tempLen;
+    }
+    private void MoveTo(int x)
+    {
+        if (x <= 0)
+        {
+            OffsetLeft = 0;
+            return;
+        }
+        var temp = 0;
+        var isSet = false;
+        foreach (var item in Tabs)
+        {
+            if (temp + item.TabWidth > x)
+            {
+                isSet = true;
+                temp += item.TabWidth;
+                break;
+            }
+            temp += item.TabWidth;
+        }
+        OffsetLeft = isSet ? temp : x; 
+    }
+    public async Task RunAddTab(string title, string url)
+    {
+        // bool has = false;
+        var tab = null as Tab;
+        foreach (var item in Tabs.Where(item => item.Title == title && item.Url == url))
+        {
+            tab = item;
+        }
+        if (tab == null)
+        {
+            tab = new Tab { Title = title, Url = url, IsActive = true };
+            Tabs.Add(tab);
+        }
+        await ActivateTab(tab);
+        StateHasChanged();
+    }
+
+    private async Task RunGoTo(string title, string url)
+    {
+        var index = Tabs.FindIndex(m => m.IsActive);
+        if (index < 0)
+        {
+            await RunAddTab(title, url);
+            return;
+        }
+        Tabs[index] = new Tab { Title = title, Url = url, IsActive = true };
+        StateHasChanged();
+
+    }
+
+    private async Task RunCloseTab()
+    {
+        var tab = Tabs.FirstOrDefault(m => m.IsActive);
+        if (tab != null)
+        {
+            await CloseTab(tab);
+        }
+        StateHasChanged();
+    }
+ 
+}

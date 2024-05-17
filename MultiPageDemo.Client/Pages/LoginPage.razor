@@ -1,0 +1,20 @@
+﻿@page "/"
+@page "/login"
+
+<PageTitle>Home</PageTitle>
+
+<h1>Hello, world!</h1>
+
+Welcome to your new app.
+
+
+<FluentButton OnClick="DoLogin">Login</FluentButton>
+
+
+@inject NavigationManager NavigationManager
+@code {
+    private void DoLogin()
+    {
+        NavigationManager.NavigateTo("/main");
+    }
+}

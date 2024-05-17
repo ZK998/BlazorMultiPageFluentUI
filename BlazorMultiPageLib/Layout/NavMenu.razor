@@ -1,0 +1,49 @@
+﻿@using BlazorMultiPageLib.Core
+
+<FluentNavMenu @bind-Expanded="MenuExpanded">
+    <FluentNavLink Icon="@(new Icons.Regular.Size24.LeafOne())" @onclick="@(e => GoTo("首页","/welcome"))">首页</FluentNavLink>
+    <FluentNavGroup Id="Group1" Title="Item 1" Icon="@(new Icons.Regular.Size24.LeafOne())">
+        <FluentNavLink Icon="@(new Icons.Regular.Size24.LeafTwo())" @onclick="@(e => GoTo("计数器","/counter"))">Counter</FluentNavLink>
+    </FluentNavGroup>
+    <FluentNavGroup Id="Group2" Title="Item 2" Icon="@(new Icons.Regular.Size24.LeafTwo())">
+        <FluentNavLink Icon="@(new Icons.Regular.Size24.LeafOne())" @onclick="@(e => GoTo("列表","/weather"))">weather</FluentNavLink>
+        <FluentNavLink Icon="@(new Icons.Regular.Size24.LeafTwo())">Item 2.2</FluentNavLink>
+    </FluentNavGroup>
+</FluentNavMenu>
+
+
+
+@code {
+
+    bool MenuExpanded = true;
+    int i = 0;
+    [CascadingParameter]
+    protected INavMenu? Menu { get; set; }  
+    private async Task GoTo(string title, string url)
+    {
+        if (Menu != null)
+        {
+             if (i > 50)
+        {
+            i = 0;
+        }
+        i++;
+
+        title = title + i;
+        await Menu.GoTo(title, url);
+        }
+       
+    }
+    //上面代码是为了测试标签滚动,正式请用下面代码
+
+    // [CascadingParameter]
+    // private INavMenu Menu { get; set; }
+    // private async Task GoTo(string title, string url)
+    // {
+    //     await Menu.GoTo(title, url);
+    // }
+
+
+
+
+}

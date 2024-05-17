@@ -1,0 +1,41 @@
+﻿@using BlazorMultiPageLib.Core
+@inherits LayoutComponentBase
+@implements INavMenu
+
+<div style="height: 100vh;">
+    <FluentMainLayout NavMenuTitle="Navigation menu" Style="--header-height:0px;height:100vh">
+        <Header>
+            <h3>Fluent UI</h3>
+            <FluentSpacer />
+            <FluentPersona Initials="ZK" ImageSize="36px"></FluentPersona>
+        </Header>
+        <Body>
+            <MultiPageTabSet @ref="tabSet" />
+        </Body>
+
+        <NavMenuContent>
+            <CascadingValue Value="this">
+                <NavMenu />
+            </CascadingValue>
+        </NavMenuContent>
+
+    </FluentMainLayout>
+
+</div>
+
+
+@code
+{
+    public MultiPageTabSet tabSet = new();
+    public async Task GoTo(string title, string url)
+    {
+        await tabSet.RunAddTab(title, url);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender) await tabSet.RunAddTab("首页", "/welcome");
+    }
+
+
+}

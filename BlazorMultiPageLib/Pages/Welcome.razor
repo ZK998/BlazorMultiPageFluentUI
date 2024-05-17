@@ -1,0 +1,30 @@
+﻿@page "/welcome"
+
+
+<FluentDataGrid Items="@people" ResizableColumns="true" Pagination="@pagination" Virtualize="false" Style="height: 405px;overflow:auto;">
+    <PropertyColumn Property="@(p => p.PersonId)" />
+    <PropertyColumn Property="@(p => p.Name)" />
+    <PropertyColumn Property="@(p => p.BirthDate)" Format="yyyy-MM-dd" />
+</FluentDataGrid>
+<FluentPaginator State="@pagination" />
+
+
+@code {
+    record Person(int PersonId, string Name, DateOnly BirthDate);
+    PaginationState pagination = new PaginationState { ItemsPerPage = 3 };
+    IQueryable<Person> people = new[]
+    {
+    new Person(10895, "Jean Martin", new DateOnly(1985, 3, 16)),
+    new Person(10944, "António Langa", new DateOnly(1991, 12, 1)),
+    new Person(11203, "Julie Smith", new DateOnly(1958, 10, 10)),
+    new Person(11205, "Nur Sari", new DateOnly(1922, 4, 27)),
+    new Person(11898, "Jose Hernandez", new DateOnly(2011, 5, 3)),
+    new Person(12130, "Kenji Sato", new DateOnly(2004, 1, 9)),
+     new Person(10895, "Jean Martin", new DateOnly(1985, 3, 16)),
+    new Person(10944, "António Langa", new DateOnly(1991, 12, 1)),
+    new Person(11203, "Julie Smith", new DateOnly(1958, 10, 10)),
+    new Person(11205, "Nur Sari", new DateOnly(1922, 4, 27)),
+    new Person(11898, "Jose Hernandez", new DateOnly(2011, 5, 3)),
+    new Person(12130, "Kenji Sato", new DateOnly(2004, 1, 9))
+    }.AsQueryable();
+}
